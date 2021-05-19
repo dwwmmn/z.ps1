@@ -1,27 +1,28 @@
-# maintains a jump-list of the directories you actually use
-#
-# INSTALL:
-#     * put something like this in your $profile:
-#         . /path/to/z.ps1
-#     * cd around for a while to build up the db
-#     * PROFIT!!
-#     * optionally:
-#         set $env:_Z_CMD in $profile to change the command (default z).
-#         set $env:_Z_DATA in $profile to change the datafile (default ~/.z).
-#         set $env:_Z_NO_RESOLVE_SYMLINKS to prevent symlink resolution.
-#         set $env:_Z_NO_PROMPT_COMMAND if you're handling PROMPT_COMMAND yourself.
-#         set $env:_Z_EXCLUDE_DIRS to an array of directories to exclude.
-#         set $env:_Z_OWNER to your username if you want use z while sudo with $HOME kept
-#
-# USE:
-#     * z foo     # cd to most frecent dir matching foo
-#     * z foo bar # cd to most frecent dir matching foo and bar
-#     * z -r foo  # cd to highest ranked dir matching foo
-#     * z -t foo  # cd to most recently accessed dir matching foo
-#     * z -l foo  # list matches instead of cd
-#     * z -c foo  # restrict matches to subdirs of $PWD
+<#
 
-$ZDataFile = if ($env:_Z_DATA) { $env:_Z_DATA } else { "$env:USERPROFILE\.z" };
+Maintains a jump-list of the directories you actually use
+
+INSTALL:
+    * put something like this in your $profile:
+        . /path/to/z.ps1
+    * cd around for a while to build up the db
+    * PROFIT!!
+    * optionally:
+        set $env:_Z_CMD in $profile to change the command (default z).
+        set $env:_Z_DATA in $profile to change the datafile (default ~/.z).
+        set $env:_Z_NO_RESOLVE_SYMLINKS to prevent symlink resolution.
+        set $env:_Z_NO_PROMPT_COMMAND if you're handling PROMPT_COMMAND yourself.
+        set $env:_Z_EXCLUDE_DIRS to an array of directories to exclude.
+        set $env:_Z_OWNER to your username if you want use z while sudo with $HOME kept
+
+USE:
+    * z foo               # cd to most frecent dir matching foo
+    * z foo bar           # cd to most frecent dir matching foo and bar
+    * z -Rank foo         # cd to highest ranked dir matching foo
+    * z -Recent foo       # cd to most recently accessed dir matching foo
+    * z -List foo         # list matches instead of cd
+    * z -OnlySubdirs foo  # restrict matches to subdirs of $PWD
+#>
 
 function ZFrecent {
     param($record, $now)
@@ -64,6 +65,7 @@ function Get-EpochTimeNow {
 }
 
 function Add-ToZDatabase {
+    $ZDataFile = if ($env:_Z_DATA) { $env:_Z_DATA } else { "$env:USERPROFILE\.z" };
     $Add = $args[0];
     $Add = (Resolve-Path $Add.TrimEnd("\"));
 
