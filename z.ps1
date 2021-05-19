@@ -97,7 +97,12 @@ function Add-ToZDatabase {
 
     # Maintain the data file
     $TmpFile = New-TemporaryFile;
-    $Data = Import-Csv -Path $ZDataFile;
+    try {
+        $Data = Import-Csv -Path $ZDataFile;
+    } catch [FileNotFoundException] {
+        Set-Location -Path $Add;
+        throw "Couldn't read from $ZDataFile";
+    }
     $Rank = 1;
     $Time = Get-EpochTimeNow;
     $Sum = 0;
@@ -146,6 +151,9 @@ function Set-ZLocation {
         [parameter(Mandatory = $false)][switch]$RestrictToSubdirs,
         [String[]]$Patterns
     )
+    $ZDataFile = if ($env:_Z_DATA) { $env:_Z_DATA } else { "$env:USERPROFILE\.z" };
+    New-ZDataFile;
+
     $HighRank = $null;
     $IHighRank = $null;
     $BestMatch = $null;
@@ -206,14 +214,19 @@ function Set-ZLocation {
     throw "Unable to find appropriate directory."
 }
 
-if (Test-Path -PathType Container "$env:USERPROFILE\.z") {
-    Write-Output "ERROR: z.ps1's datafile ($env:USERPROFILE\.z) is a directory!"
-} else {
-    if (-not (Test-Path -PathType Leaf "$env:USERPROFILE\.z")) {
+function New-ZDataFile {
+    if (Test-Path -PathType Container "$env:USERPROFILE\.z") {
+        throw "ERROR: z.ps1's datafile ($env:USERPROFILE\.z) is a directory!"
+    } elseif (-not (Test-Path -PathType Leaf "$env:USERPROFILE\.z")) {
         New-Item -Path "$env:USERPROFILE\.z"
     }
+}
 
+function Set-ZAlias {
     $AliasName = if ($env:_Z_CMD) { $env:_Z_CMD } else { "z" }
     Set-Alias -Name $AliasName -Value Set-ZLocation -Option AllScope
     Set-Alias -Name "cd" -Value Add-ToZDatabase -Option AllScope
 }
+
+New-ZDataFile
+Set-ZAlias
