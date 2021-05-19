@@ -83,11 +83,15 @@ function Add-ToZDatabase {
         $Add += "\";
     }
 
-    # Check so we don't match $HOME
-    if ($Add -eq $env:HOME) { return $null; }
+    # Check so we don't match $HOME. The logic here (I think) is that it's
+    # already easy to jump to home with ~, we don't need another shortcut.
+    if (($Add -eq $env:HOME) -or ($Add -eq $env:USERPROFILE)) {
+        Set-Location -Path $Add; return;
+    }
 
     # Don't track excluded directories
-    if (($env:_Z_EXCLUDE_DIRS -ne $null) -and ($env:_Z_EXCLUDE_DIRS -contains $Add)) {
+    if (($null -ne $env:_Z_EXCLUDE_DIRS) -and ($env:_Z_EXCLUDE_DIRS -contains $Add)) {
+        Set-Location -Path $Add;
         return;
     }
 
