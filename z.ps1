@@ -67,7 +67,21 @@ function Get-EpochTimeNow {
 function Add-ToZDatabase {
     $ZDataFile = if ($env:_Z_DATA) { $env:_Z_DATA } else { "$env:USERPROFILE\.z" };
     $Add = $args[0];
+
+    if (-not (Test-Path -Path $Add -IsValid)) {
+        throw "Invalid path specified"
+    }
     $Add = (Resolve-Path $Add.TrimEnd("\"));
+    if ($Add -match "^[A-Z]:$") {
+        # NOTE: Fixes weird behavior where `Resolve-Path C:` =>
+        # C:\Users\Username instead of C:\. Not sure why it does this.
+        #
+        # NOTE 2: Apparently the default behavior for 'Set-Location C:' is to cd
+        # to C:\Users\Username, or whatever the 'home' folder is for that drive.
+        # This is really stupid and unintuitive IMHO so I'm leaving this code
+        # here out of spite even though it's a NO-OP.
+        $Add += "\";
+    }
 
     # Check so we don't match $HOME
     if ($Add -eq $env:HOME) { return $null; }
