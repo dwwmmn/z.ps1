@@ -43,7 +43,7 @@ function ZCommon {
 
     if ($Short -match "[A-Z]:$") { return $null; } # $Short is a drive letter
     foreach ($x in $matches.Keys) {
-        if ($x -ne $null -and ($x.indexOf($Short) -ne 0)) {
+        if (($null -ne $x) -and ($x.indexOf($Short) -ne 0)) {
             return $null;
         }
     }
@@ -53,7 +53,7 @@ function ZCommon {
 
 function ZOutput {
     param( $_matches, $bestMatch, $common );
-    if ($common -ne $null) { $bestMatch = $common; }
+    if ($null -ne $common) { $bestMatch = $common; }
     return $bestMatch;
 
 }
@@ -148,7 +148,7 @@ function Set-ZLocation {
         [parameter(Mandatory = $false)][switch]$List,
         [parameter(Mandatory = $false)][switch]$Rank,
         [parameter(Mandatory = $false)][switch]$Recent,
-        [parameter(Mandatory = $false)][switch]$RestrictToSubdirs,
+        [parameter(Mandatory = $false)][switch]$OnlySubdirs,
         [String[]]$Patterns
     )
     $ZDataFile = if ($env:_Z_DATA) { $env:_Z_DATA } else { "$env:USERPROFILE\.z" };
@@ -161,10 +161,16 @@ function Set-ZLocation {
     $NormalMatches = New-Object System.Collections.Hashtable;
     $IMatches = New-Object System.Collections.Hashtable;
     $Data = Import-Csv -Path $ZDataFile;
-    $BuiltRegexString = $Patterns -join ".*"
+    $QuotedPatterns = $Patterns | ForEach-Object { [Regex]::Escape($_) };
+    $BuiltRegexString = $QuotedPatterns -join ".*"
     $Now = Get-EpochTimeNow;
 
-    if ($RestrictToSubdirs) {
+    if ($Patterns[0] -eq "-") {
+        Set-Location -
+        return
+    }
+
+    if ($OnlySubdirs) {
         $BuiltRegexString = "$([Regex]::Escape((Get-Location))).*$BuiltRegexString"
     }
 
@@ -192,21 +198,20 @@ function Set-ZLocation {
     }
 
     $ChosenMatch = $null; $ChosenMatches = $null
-    if ($BestMatch -ne $null) {
+    if ($null -ne $BestMatch) {
         $ChosenMatch = $BestMatch; $ChosenMatches = $NormalMatches
     }
-    elseif ($IBestMatch -ne $null) {
+    elseif ($null -ne $IBestMatch) {
         $ChosenMatch = $IBestMatch; $ChosenMatches = $IMatches
     }
 
     if ($List) {
         $ChosenMatches | Format-Table;
         return
-    } else {
-        $cd = ZOutput $ChosenMatches $ChosenMatch (ZCommon $ChosenMatches)
     }
-
-    if ($cd -ne $null) {
+    
+    $cd = ZOutput $ChosenMatches $ChosenMatch (ZCommon $ChosenMatches);
+    if ($null -ne $cd) {
         Set-Location -Path $cd;
         return
     }
